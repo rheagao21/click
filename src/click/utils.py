@@ -3,6 +3,7 @@ from __future__ import annotations
 import collections.abc as cabc
 import os
 import re
+import stat
 import sys
 import typing as t
 from functools import update_wrapper
@@ -137,8 +138,15 @@ class _LazyFile:
             if "r" in mode:
                 # Open and close the file in case we're opening it for
                 # reading so that we can catch at least some errors in
-                # some cases early.
-                open(filename, mode).close()
+                # some cases early. Opening a FIFO would wait for a writer
+                # and count as a read, so defer it until the file is used.
+                try:
+                    is_fifo = stat.S_ISFIFO(os.stat(filename).st_mode)
+                except OSError:
+                    is_fifo = False
+
+                if not is_fifo:
+                    open(filename, mode).close()
             self._f = None
             self.should_close = True
 
@@ -407,8 +415,9 @@ def open_file(
         text mode.
     :param errors: The error handling mode.
     :param lazy: Wait to open the file until it is accessed. For read
-        mode, the file is temporarily opened to raise access errors
-        early, then closed until it is read again.
+        mode, ordinary files are temporarily opened to raise access errors
+        early, then closed until they are read again. FIFOs are not opened
+        until they are accessed.
     :param atomic: Write to a temporary file and replace the given file
         on close.
 
