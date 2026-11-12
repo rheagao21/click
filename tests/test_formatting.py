@@ -514,6 +514,33 @@ def test_write_usage_styled_prefix_keeps_options_on_one_line():
     assert visible == "Usage: cli [OPTIONS]\n"
 
 
+def test_write_usage_moves_fitting_option_to_next_line():
+    formatter = click.HelpFormatter(width=27)
+    formatter.write_usage("program", "--one --long-option")
+
+    assert formatter.getvalue() == (
+        "Usage: program \n"
+        "           --one\n"
+        "           --long-option\n"
+    )
+
+
+def test_write_usage_breaks_option_wider_than_line():
+    formatter = click.HelpFormatter(width=20)
+    formatter.write_usage("program", "--option-that-is-too-long")
+
+    assert formatter.getvalue() == (
+        "Usage: program \n"
+        "           --option-\n"
+        "           that-is-t\n"
+        "           oo-long\n"
+    )
+
+
+def test_wrap_text_still_breaks_at_hyphens():
+    assert click.formatting.wrap_text("one long-option", width=9) == "one long-\noption"
+
+
 @pytest.mark.parametrize(
     ("formatter_kwargs", "current_indent", "prog", "args", "prefix", "expected"),
     [
