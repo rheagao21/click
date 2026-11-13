@@ -366,6 +366,28 @@ def test_full_source_powershell(runner):
 
 
 @pytest.mark.parametrize(
+    ("words", "cword", "expect"),
+    [
+        (r"cli C:\Users\ann\doc", 1, ([], r"C:\Users\ann\doc")),
+        ("cli C:\\Users\\ann\\doc\\", 1, ([], "C:\\Users\\ann\\doc\\")),
+        (
+            r'cli --output "C:\Users\ann\My Docs\doc"',
+            2,
+            (["--output"], r"C:\Users\ann\My Docs\doc"),
+        ),
+    ],
+)
+def test_powershell_completion_args_preserve_windows_paths(
+    monkeypatch, words: str, cword: int, expect: tuple[list[str], str]
+) -> None:
+    monkeypatch.setenv("COMP_WORDS", words)
+    monkeypatch.setenv("COMP_CWORD", str(cword))
+    comp = PowerShellComplete(Command("cli"), {}, "cli", "_CLI_COMPLETE")
+
+    assert comp.get_completion_args() == expect
+
+
+@pytest.mark.parametrize(
     ("shell", "env", "expect"),
     [
         ("bash", {"COMP_WORDS": "", "COMP_CWORD": "0"}, "plain,a\nplain,b\n"),
