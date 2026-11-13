@@ -27,7 +27,24 @@ the command line. Token normalization functions and `case_sensitive=False` can c
 match. {meth}`Choice.normalize_choice` for more info.
 
 
-Example:
+String choices can match case-insensitively while returning the choice with its originally declared capitalization:
+
+```{eval-rst}
+.. click:example::
+
+    @click.command()
+    @click.option("--level", type=click.Choice(["Debug", "Warning"], case_sensitive=False))
+    def log(level):
+        click.echo(level)
+
+What it looks like:
+
+.. click:run::
+
+    invoke(log, args=["--level=debug"])
+```
+
+An `Enum` can also provide the choices:
 
 ```{eval-rst}
 .. click:example::
