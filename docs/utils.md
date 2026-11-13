@@ -387,3 +387,20 @@ with click.progressbar(length=total_size,
         archive.extract()
         bar.update(archive.size)
 ```
+
+For example, when bytes arrive in chunks and the total size is known, update the bar manually:
+
+```python
+import click
+
+chunks = [b"hello", b" ", b"world"]
+total_size = sum(len(chunk) for chunk in chunks)
+received = bytearray()
+
+with click.progressbar(length=total_size, label="Receiving data") as bar:
+    for chunk in chunks:
+        received.extend(chunk)
+        bar.update(len(chunk))
+```
+
+The bar advances by the chunk size because each update represents the number of bytes received, rather than one item.
