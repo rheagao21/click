@@ -523,7 +523,7 @@ class PowerShellComplete(ShellComplete):
     source_template: t.ClassVar[str] = _SOURCE_POWERSHELL
 
     def get_completion_args(self) -> tuple[list[str], str]:
-        cwords = split_arg_string(os.environ["COMP_WORDS"])
+        cwords = _split_arg_string_windows(os.environ["COMP_WORDS"])
         cword = int(os.environ["COMP_CWORD"])
         args = cwords[1:cword]
 
@@ -593,6 +593,24 @@ def get_completion_class(shell: str) -> type[ShellComplete] | None:
     :param shell: Name the class is registered under.
     """
     return _available_shells.get(shell)
+
+
+def _split_arg_string_windows(string: str) -> list[str]:
+    """Split a PowerShell command line without treating backslashes as escapes."""
+    import shlex
+
+    lex = shlex.shlex(string, posix=True)
+    lex.whitespace_split = True
+    lex.commenters = ""
+    lex.escape = ""
+    out: list[str] = []
+
+    try:
+        out.extend(lex)
+    except ValueError:
+        out.append(lex.token)
+
+    return out
 
 
 def split_arg_string(string: str) -> list[str]:
