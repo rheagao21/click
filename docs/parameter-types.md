@@ -27,7 +27,23 @@ the command line. Token normalization functions and `case_sensitive=False` can c
 match. {meth}`Choice.normalize_choice` for more info.
 
 
-Example:
+For example, a case-insensitive choice returns the originally passed choice,
+not the spelling entered on the command line:
+
+```{eval-rst}
+.. click:example::
+
+    @click.command()
+    @click.option("--name", type=click.Choice(["Alice", "Bob"], case_sensitive=False))
+    def hello(name: str):
+        click.echo(name)
+
+.. click:run::
+
+    invoke(hello, args=["--name", "alice"])
+```
+
+An enum can also be used for the choices:
 
 ```{eval-rst}
 .. click:example::
