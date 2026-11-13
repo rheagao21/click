@@ -1396,8 +1396,35 @@ class Command:
         parser = self.make_parser(ctx)
         opts, args, param_order = parser.parse_args(args=args)
 
-        for param in iter_params_for_processing(param_order, self.get_params(ctx)):
-            _, args = param.handle_parse_result(ctx, opts, args)
+        params = self.get_params(ctx)
+        option_names = Counter(
+            param.name for param in params if isinstance(param, Option)
+        )
+        shared_option_names = {
+            name for name, count in option_names.items() if count > 1
+        }
+        option_owners = {
+            param.name: param
+            for param in param_order
+            if isinstance(param, Option) and param.name in shared_option_names
+        }
+
+        for param in iter_params_for_processing(param_order, params):
+            param_opts = opts
+
+            # The parser stores values by destination name. When multiple options use
+            # the same destination, only the option that supplied the final value may
+            # consume it. Otherwise every sibling treats that value as its own command
+            # line input and can overwrite the supplying option's converted or callback-
+            # transformed value.
+            if (
+                isinstance(param, Option)
+                and param.name in option_owners
+                and option_owners[param.name] is not param
+            ):
+                param_opts = {k: v for k, v in opts.items() if k != param.name}
+
+            _, args = param.handle_parse_result(ctx, param_opts, args)
 
         # We now have all parameters' values into `ctx.params`, but the data may contain
         # the `UNSET` sentinel.

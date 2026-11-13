@@ -2025,6 +2025,31 @@ def test_default_dual_option_callback(runner, default, args, expected):
 
 
 @pytest.mark.parametrize(
+    ("args", "expected"),
+    [
+        (["--fetch"], "fetched"),
+        (["--custom", "explicit"], "explicit"),
+        ([], None),
+    ],
+)
+def test_shared_option_keeps_flag_callback_value(runner, args, expected):
+    """A sibling option must not reprocess the flag's raw parser value."""
+
+    def fetch_value(ctx, param, value):
+        return "fetched" if value == "sentinel" else value
+
+    @click.command()
+    @click.option("--custom", "value")
+    @click.option("--fetch", "value", flag_value="sentinel", callback=fetch_value)
+    def cli(value):
+        click.echo(repr(value))
+
+    result = runner.invoke(cli, args)
+    assert result.exit_code == 0
+    assert result.output == f"{expected!r}\n"
+
+
+@pytest.mark.parametrize(
     ("flag_value", "envvar_value", "expected"),
     [
         # The envvar match exactly the flag value and is case-sensitive.
